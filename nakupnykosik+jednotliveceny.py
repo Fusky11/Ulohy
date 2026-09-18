@@ -14,19 +14,23 @@ while True:
     else: 
         nakupny_kosik.append(vstup)
 
-print("-------------------------------------------------------------------------------------------")
+print("=============================================================================================")
 
 for polozka in nakupny_kosik:
     if polozka in ovocie:
         print(f"{polozka} je ovocie a stoji {ovocie[polozka]}€")
         celkova_cena = celkova_cena + ovocie[polozka]
     elif polozka in zelenina:
-        print(f"{polozka} je zelenina a stoji {zelenina[polozka]}€")
+        print(f"{polozka} je zelenina {zelenina[polozka]}€")
         celkova_cena = celkova_cena + zelenina[polozka]
     elif polozka in sladkosti:
-        print(f"{polozka} je sladkost a stoji {sladkosti[polozka]}€")
+        print(f"{polozka} je sladkost {sladkosti[polozka]}€")
         celkova_cena = celkova_cena + sladkosti[polozka]
     else:
         print(f"{polozka} je nieco ine a stoji 0€")
 
-print(f"celkova cena: {celkova_cena}")
+print("============================================================================================")
+print(                                                                                              )
+print(f"CELKOVA CENA: {celkova_cena}")
+print(                                                                                              )
+print("============================================================================================")
