@@ -20,24 +20,31 @@ while True:
     print("co chcete pridat do kosika?")
     vstup = input()
     if vstup == "uz nic" or vstup == "koniec":
-        break 
+        break
     print("kolko kusov chcete pridat do kosika?")
     mnozstvo = int(input())
     nakupny_kosik.append((vstup, mnozstvo))
 
-print("-------------------------------------------------------------------------------------------")
+print("-----------------------------------------------------------------")
 
 for polozka, pocet_kusov in nakupny_kosik:
     if polozka in sklad:
         cena_za_kus, kategoria, skladom = sklad[polozka]
-        cena_spolu = cena_za_kus * pocet_kusov
-        print(f"{polozka} ({pocet_kusov}x) je {kategoria} a stoji spolu {cena_spolu}€")
-        celkova_cena = celkova_cena + cena_spolu
+        
+        if pocet_kusov <= skladom:
+            novy_sklad = skladom - pocet_kusov
+            sklad[polozka] = (cena_za_kus, kategoria, novy_sklad)
+            
+            cena_spolu = cena_za_kus * pocet_kusov
+            print(f"{polozka} ({pocet_kusov}x) je {kategoria} a stoji spolu {cena_spolu} eur, na sklade zostalo {novy_sklad} ks")
+            celkova_cena = celkova_cena + cena_spolu
+        else:
+            print(f"nemame dostatok {polozka} na sklade, na sklade je len {skladom} ks")
     else:
         print(f"{polozka} nemame v sklade")
 
-print("-------------------------------------------------------------------------------------------")
+print("-----------------------------------------------------------------")
 print("")
-print(f"celkova cena: {celkova_cena}€")
+print(f"celkova cena: {celkova_cena} eur")
 print("")
-print("-------------------------------------------------------------------------------------------")
+print("-----------------------------------------------------------------")
