@@ -43,8 +43,23 @@ for polozka, pocet_kusov in nakupny_kosik:
     else:
         print(f"{polozka} nemame v sklade")
 
-print("-----------------------------------------------------------------")
+while True:
+    print("mas kupon na zlavovy kod? (ano/nie)")
+    odpoved = input()
+    if odpoved == "ano":
+        print("zadaj zlavovy kod:")
+        zlavovy_kod = input()
+        if zlavovy_kod == "ZLAVA10":
+            celkova_cena = celkova_cena * 0.9
+            break
+        elif zlavovy_kod == "ZLAVA50":
+            celkova_cena = celkova_cena * 0.5
+            print("zlavovy kod bol uplatneny")
+        else:
+            print("zlavovy kod je neplatny")
+
+print("-------------------------------------------------------------------------------------------")
 print("")
 print(f"celkova cena: {celkova_cena} eur")
 print("")
-print("-----------------------------------------------------------------")
+print("-------------------------------------------------------------------------------------------")
