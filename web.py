@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
@@ -26,6 +26,14 @@ class PolozkaKosika(BaseModel):
 class Objednavka(BaseModel):
     polozky: list[PolozkaKosika]
     kupon: str = ""
+
+# Model pre pridávanie tovaru adminom
+class NovaPolozka(BaseModel):
+    nazov: str
+    cena: float
+    kategoria: str
+    mnozstvo: int
+    heslo: str
 
 @app.get("/api/sklad")
 def get_sklad():
@@ -72,6 +80,26 @@ def spracuj_nakup(objednavka: Objednavka):
         "aktualny_sklad": sklad
     }
 
+# Nový API endpoint pre admina
+@app.post("/api/admin/pridat")
+def pridat_do_skladu(tovar: NovaPolozka):
+    if tovar.heslo != "1111":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Nesprávne administrátorské heslo!"
+        )
+    
+    # Ak už tovar existuje, pripočítame množstvo a aktualizujeme cenu/kategóriu
+    if tovar.nazov in sklad:
+        sklad[tovar.nazov][0] = tovar.cena
+        sklad[tovar.nazov][1] = tovar.kategoria
+        sklad[tovar.nazov][2] += tovar.mnozstvo
+    else:
+        # Ak neexistuje, vytvoríme nový záznam
+        sklad[tovar.nazov] = [tovar.cena, tovar.kategoria, tovar.mnozstvo]
+        
+    return {"message": f"Tovar '{tovar.nazov}' bol úspešne aktualizovaný/pridaný.", "aktualny_sklad": sklad}
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     return """
@@ -83,12 +111,15 @@ def index():
         <style>
             body { font-family: Arial, sans-serif; max-width: 800px; margin: 30px auto; padding: 20px; background: #f4f6f8; }
             .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .admin-card { background: #fff3cd; border-left: 5px solid #ffc107; }
             h1, h2 { color: #333; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
             th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
             button { background: #28a745; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
             button:hover { background: #218838; }
-            input[type=number], input[type=text] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+            .btn-admin { background: #ffc107; color: #212529; }
+            .btn-admin:hover { background: #e0a800; }
+            input[type=number], input[type=text], input[type=password] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
             .btn-danger { background: #dc3545; }
             .btn-danger:hover { background: #c82333; }
             .receipt { background: #e9f7ef; border-left: 5px solid #28a745; padding: 15px; margin-top: 15px; }
@@ -125,6 +156,19 @@ def index():
         <div id="vysledokCard" class="card receipt" style="display:none;">
             <h2>Vysledok nakupu</h2>
             <div id="vysledokText"></div>
+        </div>
+
+        <!-- NOVÝ ADMIN PANEL -->
+        <div class="card admin-card">
+            <h2>🔐 Admin panel (Pridávanie do skladu)</h2>
+            <p>
+                <input type="password" id="adminHeslo" placeholder="Heslo" style="width: 100px;">
+                <input type="text" id="adminNazov" placeholder="Názov tovaru">
+                <input type="text" id="adminKategoria" placeholder="Kategória" style="width: 100px;">
+                <input type="number" id="adminCena" placeholder="Cena (€)" min="0" step="0.01" style="width: 70px;">
+                <input type="number" id="adminMnozstvo" placeholder="Ks" min="1" style="width: 60px;">
+                <button class="btn-admin" onclick="pridatTovarAdmin()">Pridať / Naskladniť</button>
+            </p>
         </div>
 
         <script>
@@ -209,11 +253,148 @@ def index():
                 nacitajSklad();
             }
 
+            // FUNKCIA PRE ADMINA
+            async function pridatTovarAdmin() {
+                let heslo = document.getElementById('adminHeslo').value;
+                let nazov = document.getElementById('adminNazov').value.trim();
+                let kategoria = document.getElementById('adminKategoria').value.trim();
+                let cena = parseFloat(document.getElementById('adminCena').value);
+                let mnozstvo = parseInt(document.getElementById('adminMnozstvo').value);
+
+                if (!heslo || !nazov || !kategoria || isNaN(cena) || isNaN(mnozstvo)) {
+                    alert('Vyplňte všetky polia v admin paneli!');
+                    return;
+                }
+
+                let res = await fetch('/api/admin/pridat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nazov: nazov,
+                        kategoria: kategoria,
+                        cena: cena,
+                        mnozstvo: mnozstvo,
+                        heslo: heslo
+                    })
+                });
+
+                if (res.status === 401) {
+                    alert('Nesprávne heslo!');
+                    return;
+                }
+
+                if (res.ok) {
+                    alert('Sklad bol úspešne aktualizovaný!');
+                    document.getElementById('adminNazov').value = '';
+                    document.getElementById('adminKategoria').value = '';
+                    document.getElementById('adminCena').value = '';
+                    document.getElementById('adminMnozstvo').value = '';
+                    nacitajSklad();
+                } else {
+                    alert('Nastala chyba pri komunikácii so serverom.');
+                }
+            }
+
             nacitajSklad();
         </script>
     </body>
     </html>
     """
 
+@app.get("/admin", response_class=HTMLResponse)
+def admin_page():
+    return """
+    <!DOCTYPE html>
+    <html lang="sk">
+    <head>
+        <meta charset="UTF-8">
+        <title>Admin Panel - Správa skladu</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; background: #f4f6f8; }
+            .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #ffc107; }
+            h2 { color: #333; margin-top: 0; }
+            .form-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; }
+            input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+            button { width: 100%; background: #ffc107; color: #212529; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; }
+            button:hover { background: #e0a800; }
+            .back-link { display: inline-block; margin-top: 15px; color: #007bff; text-decoration: none; }
+            .back-link:hover { text-decoration: underline; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>🔐 Admin panel (Pridávanie do skladu)</h2>
+            <div class="form-group">
+                <label>Heslo:</label>
+                <input type="password" id="adminHeslo" placeholder="Zadajte heslo">
+            </div>
+            <div class="form-group">
+                <label>Názov tovaru:</label>
+                <input type="text" id="adminNazov" placeholder="Napr. jablko">
+            </div>
+            <div class="form-group">
+                <label>Kategória:</label>
+                <input type="text" id="adminKategoria" placeholder="Napr. ovocie">
+            </div>
+            <div class="form-group">
+                <label>Cena za kus (€):</label>
+                <input type="number" id="adminCena" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>Množstvo (ks):</label>
+                <input type="number" id="adminMnozstvo" min="1" placeholder="0">
+            </div>
+            <button onclick="pridatTovarAdmin()">Pridať / Naskladniť</button>
+            <a href="/" class="back-link">⬅ Späť do obchodu</a>
+        </div>
+
+        <script>
+            async function pridatTovarAdmin() {
+                let heslo = document.getElementById('adminHeslo').value;
+                let nazov = document.getElementById('adminNazov').value.trim();
+                let kategoria = document.getElementById('adminKategoria').value.trim();
+                let cena = parseFloat(document.getElementById('adminCena').value);
+                let mnozstvo = parseInt(document.getElementById('adminMnozstvo').value);
+
+                if (!heslo || !nazov || !kategoria || isNaN(cena) || isNaN(mnozstvo)) {
+                    alert('Vyplňte všetky polia!');
+                    return;
+                }
+
+                let res = await fetch('/api/admin/pridat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nazov: nazov,
+                        kategoria: kategoria,
+                        cena: cena,
+                        mnozstvo: mnozstvo,
+                        heslo: heslo
+                    })
+                });
+
+                if (res.status === 401) {
+                    alert('Nesprávne heslo!');
+                    return;
+                }
+
+                if (res.ok) {
+                    alert('Sklad bol úspešne aktualizovaný!');
+                    document.getElementById('adminNazov').value = '';
+                    document.getElementById('adminKategoria').value = '';
+                    document.getElementById('adminCena').value = '';
+                    document.getElementById('adminMnozstvo').value = '';
+                } else {
+                    alert('Nastala chyba pri komunikácii so serverom.');
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
+    
