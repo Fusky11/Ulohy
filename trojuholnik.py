@@ -1,4 +1,4 @@
-cislo = 5
+number = 5
 
-for i in range(1, cislo + 1):
+for i in range(1, number + 1):
     print("*" * i)
