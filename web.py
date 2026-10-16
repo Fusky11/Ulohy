@@ -180,7 +180,7 @@ def index():
         </style>
     </head>
     <body>
-        <h1>Internetovy Obchod</h1>
+        <h1>Internetovy Obchod <3</h1>
         
         <div class="card">
             <h2>Ponuka na sklade</h2>
