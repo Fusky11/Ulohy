@@ -28,7 +28,7 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM sklad")
     if cursor.fetchone()[0] == 0:
         pociatocny_tovar = [
-            ("jablčko", 1.0, "ovocie", 1000),
+            ("jablko", 1.0, "ovocie", 1000),
             ("banan", 2.0, "ovocie", 1000),
             ("hruska", 2.0, "ovocie", 1000),
             ("marhula", 2.0, "ovocie", 1000),
