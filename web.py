@@ -89,7 +89,7 @@ def spracuj_nakup(objednavka: Objednavka):
     uctenka = []
     
     for item in objednavka.polozky:
-        cursor.execute("SELECT cena, kategoria, skladom FROM sklad WHERE nazov = ?", (item.nazov,))
+        cursor.execute("SELECT cena, kategoria, skladom FROM sklad WHERE nazov = %s", (item.nazov,))
         row = cursor.fetchone()
         
         if row:
@@ -98,7 +98,7 @@ def spracuj_nakup(objednavka: Objednavka):
             
             if pocet_kusov <= skladom:
                 novy_sklad = skladom - pocet_kusov
-                cursor.execute("UPDATE sklad SET skladom = ? WHERE nazov = ?", (novy_sklad, item.nazov))
+                cursor.execute("UPDATE sklad SET skladom = %s WHERE nazov = %s", (novy_sklad, item.nazov))
                 
                 cena_spolu = cena_za_kus * pocet_kusov
                 celkova_cena += cena_spolu
@@ -142,16 +142,16 @@ def pridat_do_skladu(tovar: NovaPolozka):
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT skladom FROM sklad WHERE nazov = ?", (tovar.nazov,))
+    cursor.execute("SELECT skladom FROM sklad WHERE nazov = %s", (tovar.nazov,))
     row = cursor.fetchone()
     
     if row:
         novy_sklad = row[0] + tovar.mnozstvo
-        cursor.execute("UPDATE sklad SET cena = ?, kategoria = ?, skladom = ? WHERE nazov = ?", 
-                       (tovar.cena, tovar.kategoria, novy_sklad, tovar.nazov))
+        cursor.execute("UPDATE sklad SET cena = %s, kategoria = %s, skladom = %s WHERE nazov = %s", 
+               (tovar.cena, tovar.kategoria, novy_sklad, tovar.nazov))
     else:
-        cursor.execute("INSERT INTO sklad VALUES (?, ?, ?, ?)", 
-                       (tovar.nazov, tovar.cena, tovar.kategoria, tovar.mnozstvo))
+        cursor.execute("INSERT INTO sklad VALUES (%s, %s, %s, %s)", 
+               (tovar.nazov, tovar.cena, tovar.kategoria, tovar.mnozstvo))
         
     conn.commit()
     cursor.execute("SELECT nazov, cena, kategoria, skladom FROM sklad")
