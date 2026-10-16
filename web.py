@@ -47,7 +47,7 @@ def init_db():
             ("cokolada", 3.0, "sladkost", 1000),
             ("cukor", 1.0, "sladkost", 1000)
         ]
-        cursor.executemany("INSERT INTO sklad VALUES (?, ?, ?, ?)", pociatocny_tovar)
+        cursor.executemany("INSERT INTO sklad VALUES (%s, %s, %s, %s)", počiatočný_tovar)
         conn.commit()
     conn.close()
 
