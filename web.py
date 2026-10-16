@@ -5,8 +5,6 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
 
-print("hello world")
-
 app = FastAPI()
 
 # Funkcia na pripojenie k databaze
@@ -30,7 +28,7 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM sklad")
     if cursor.fetchone()[0] == 0:
         pociatocny_tovar = [
-            ("jablko", 1.0, "ovocie", 1000),
+            ("jablčko", 1.0, "ovocie", 1000),
             ("banan", 2.0, "ovocie", 1000),
             ("hruska", 2.0, "ovocie", 1000),
             ("marhula", 2.0, "ovocie", 1000),
