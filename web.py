@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
 
+print("hello world")
 app = FastAPI()
 
 # Funkcia na pripojenie k databaze
