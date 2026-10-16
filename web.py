@@ -1,15 +1,22 @@
-import sqlite3
 import os
+import psycopg2  # Nahradili sme sqlite3 za psycopg2
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import uvicorn
 
+
 app = FastAPI()
 
-# Funkcia na pripojenie k databaze
+# Funkcia na pripojenie k PostgreSQL databáze
 def get_db():
-    conn = sqlite3.connect("obchod.db")
+    # Načíta premennú z Renderu. Ak tam nie je (napr. testujete lokálne), vyhodí chybu.
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    
+    # Pripojenie k Postgresu
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 # Inicializacia databazy a pociatocnych dat
